@@ -1,8 +1,8 @@
-# --- 務必在最頂部加入以下程式碼，以確保使用更新的 sqlite3 ---
-__import__('pysqlite3')
-import sys
-sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
-# -----------------------------------------------------------
+# # --- 務必在最頂部加入以下程式碼，以確保使用更新的 sqlite3 ---
+# __import__('pysqlite3')
+# import sys
+# sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+# # -----------------------------------------------------------
 
 import streamlit as st
 import time
