@@ -1,0 +1,4 @@
+langchain==0.3.25
+langchain-community==0.3.24
+langchain-core==0.3.62
+streamlit==1.45.1
