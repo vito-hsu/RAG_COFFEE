@@ -11,7 +11,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_community.chat_models import ChatOllama
 #endregion
 
-#region --- Streamlit 應用程式設定 ---
+#region --- Streamlit 設定 ---
 st.set_page_config(page_title="智能咖啡銷售助理", layout="centered", initial_sidebar_state="auto")
 st.title("☕ 智能咖啡銷售助理 ☕")
 st.markdown("---")
@@ -59,7 +59,7 @@ def setup_rag_system_dynamic(context_text):                                     
     return rag_chain
 #endregion
 
-#region --- 初始化 session state 變數 ---
+#region --- 初始變數 ---
 #       重要!!  可以將 st.session_state 理解為 Streamlit 應用程式中一種特殊的「全域變數」概念
 if "messages" not in st.session_state:                  # 歷史訊息
     st.session_state.messages = []
@@ -73,7 +73,7 @@ if "show_confirm_modal" not in st.session_state:        # 是否顯示再確認�
     st.session_state.show_confirm_modal = False
 #endregion
 
-#region --- 初始化/更新知識庫按鈕 ---
+#region --- 初始按鈕 ---
 if st.button("初始化/更新知識庫"):                                                       # 當使用者點擊此按鈕時，根據狀態決定是直接初始化還是顯示確認方框
     if not st.session_state.initial_kb_loaded:                                          # 第一次點擊：直接初始化知識庫
         if len(final_context_text) == 0:
@@ -96,7 +96,7 @@ if st.button("初始化/更新知識庫"):                                      
         st.rerun()                                                                      # 強制 Streamlit 重新執行，以立即顯示確認方框
 #endregion
 
-#region --- 確認方框 (Modal) 邏輯 ---
+#region --- 方框邏輯 ---
 if st.session_state.show_confirm_modal:                                                 # 只有當 st.session_state.show_confirm_modal 為 True 時才顯示
     st.markdown("---")                                                                  # 分隔線
     st.info("ℹ️ 您已經初始化過知識庫。再次點擊表示您要**更新**知識庫。")
@@ -161,7 +161,7 @@ else:                                                                   # 如果
 
 #endregion
 
-#region --- 側邊欄使用說明 ---
+#region --- 側欄說明 ---
 st.sidebar.markdown("---")
 st.sidebar.header("使用說明")
 st.sidebar.markdown("""
