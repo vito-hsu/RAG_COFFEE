@@ -73,10 +73,8 @@ if "show_confirm_modal" not in st.session_state:
 #endregion
 
 #region --- 初始化/更新知識庫按鈕 ---
-# 當使用者點擊此按鈕時，根據狀態決定是直接初始化還是顯示確認方框
-if st.button("初始化/更新知識庫"):
-    if not st.session_state.initial_kb_loaded:
-        # 第一次點擊：直接初始化知識庫
+if st.button("初始化/更新知識庫"):                                                       # 當使用者點擊此按鈕時，根據狀態決定是直接初始化還是顯示確認方框
+    if not st.session_state.initial_kb_loaded:                                          # 第一次點擊：直接初始化知識庫
         if len(final_context_text) == 0:
             st.error("請在文字區域中輸入您的公司資訊，或使用範例文本。")
         else:
@@ -84,58 +82,50 @@ if st.button("初始化/更新知識庫"):
                 try:
                     st.session_state.rag_chain = setup_rag_system_dynamic(final_context_text)
                     st.session_state.rag_system_ready = True
-                    st.session_state.initial_kb_loaded = True # 標記為已載入
+                    st.session_state.initial_kb_loaded = True                           # 標記為已載入
                     st.success("🎉 知識庫與 AI 模型初始化完成！現在可以開始提問了。")
-                    st.session_state.messages = [] # 清空聊天歷史
+                    st.session_state.messages = []                                      # 清空聊天歷史
                 except Exception as e:
                     st.session_state.rag_system_ready = False
                     st.session_state.rag_chain = None
                     st.error(f"初始化失敗：{e}。請確認 Ollama 服務正在運行且模型已下載。")
                     st.warning("請確保您已安裝 Ollama 並已拉取以下模型：`nomic-embed-text` 和 `llama3.2`。")
     else:
-        # 後續點擊：顯示確認方框
-        st.session_state.show_confirm_modal = True
-        st.rerun() # 強制 Streamlit 重新執行，以立即顯示確認方框
+        st.session_state.show_confirm_modal = True                                      # 如果已經初始化過，則跳到 show_confirm_modal 確認方框邏輯(下方)
+        st.rerun()                                                                      # 強制 Streamlit 重新執行，以立即顯示確認方框
 #endregion
 
 #region --- 確認方框 (Modal) 邏輯 ---
-# 只有當 st.session_state.show_confirm_modal 為 True 時才顯示
-if st.session_state.show_confirm_modal:
-    st.markdown("---") # 分隔線
+if st.session_state.show_confirm_modal:                                                 # 只有當 st.session_state.show_confirm_modal 為 True 時才顯示
+    st.markdown("---")                                                                  # 分隔線
     st.info("ℹ️ 您已經初始化過知識庫。再次點擊表示您要**更新**知識庫。")
     st.write("**是否確定要用當前文字區域的資訊來更新知識庫？這將清除當前對話歷史。**")
-
-    # 設置兩個按鈕，用於確認或取消操作
-    col_confirm, col_cancel = st.columns(2)
+    col_confirm, col_cancel = st.columns(2)                                             # 設置兩個按鈕，用於確認或取消操作
     with col_confirm:
-        # 點擊「確定更新」按鈕
-        if st.button("確定更新", key="confirm_update_kb_button"):
-            # 執行知識庫更新的邏輯
-            if len(final_context_text) == 0:
+        if st.button("確定更新", key="confirm_update_kb_button"):                       # 點擊「確定更新」按鈕
+            if len(final_context_text) == 0:                                            # 執行知識庫更新的邏輯
                 st.error("請在文字區域中輸入您的公司資訊，或使用範例文本。")
-                st.session_state.show_confirm_modal = False # 出錯時隱藏方框
-                st.rerun() # 強制重新執行以更新UI
+                st.session_state.show_confirm_modal = False                             # 出錯時隱藏方框
+                st.rerun()                                                              # 強制重新執行以更新UI
             else:
                 with st.spinner("🔄 正在更新知識庫與 AI 模型，請稍候..."):
                     try:
                         st.session_state.rag_chain = setup_rag_system_dynamic(final_context_text)
                         st.session_state.rag_system_ready = True
                         st.success("✅ 知識庫已成功更新！")
-                        st.session_state.messages = [] # 清空聊天歷史
-                        st.session_state.show_confirm_modal = False # 隱藏確認方框
-                        st.rerun() # 強制重新執行以更新UI
+                        st.session_state.messages = []                                  # 清空聊天歷史
+                        st.session_state.show_confirm_modal = False                     # 隱藏確認方框
+                        st.rerun()                                                      # 強制重新執行以更新UI
                     except Exception as e:
                         st.session_state.rag_system_ready = False
                         st.session_state.rag_chain = None
                         st.error(f"更新失敗：{e}。請確認 Ollama 服務正在運行且模型已下載。")
-                        st.session_state.show_confirm_modal = False # 出錯時隱藏方框
-                        st.rerun() # 強制重新執行以更新UI
-
+                        st.session_state.show_confirm_modal = False                     # 出錯時隱藏方框
+                        st.rerun()                                                      # 強制重新執行以更新UI
     with col_cancel:
-        # 點擊「取消」按鈕
-        if st.button("取消", key="cancel_update_kb_button"):
-            st.session_state.show_confirm_modal = False # 隱藏確認方框
-            st.rerun() # 強制重新執行以更新UI
+        if st.button("取消", key="cancel_update_kb_button"):                            # 點擊「取消」按鈕
+            st.session_state.show_confirm_modal = False                                 # 隱藏確認方框
+            st.rerun()                                                                  # 強制重新執行以更新UI
 #endregion
 
 #region --- 聊天介面邏輯 ---
@@ -160,7 +150,7 @@ if st.session_state.rag_system_ready:                                   # 獲取
                 ai_response = st.session_state.rag_chain.invoke(prompt) # 重要!!! 調用 RAG 鏈獲取回覆。
                 for chunk in ai_response.split():                       # 逐字顯示 AI 回覆，模擬真實的打字效果
                     full_response += chunk + " "
-                    # time.sleep(0.02) # 模擬打字延遲
+                    # time.sleep(0.02)                                  # 模擬打字延遲
                     message_placeholder.markdown(full_response + "▌")   # 顯示正在打字的效果
 
                 message_placeholder.markdown(full_response)             # 顯示最終回覆
