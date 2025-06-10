@@ -15,7 +15,7 @@ from langchain_community.chat_models import ChatOllama
 st.set_page_config(page_title="智能咖啡銷售助理", layout="centered", initial_sidebar_state="auto")
 st.title("☕ 智能咖啡銷售助理 ☕")
 st.markdown("---")
-temperature = st.slider("AI temperature", max_value=1.0, min_value=0.0, step=0.01, value=0.0)
+temperature = st.slider("AI temperature (數值越大，AI提供越熱情的服務態度)", max_value=1.0, min_value=0.0, step=0.01, value=0.0)
 # 預設的知識庫文本範例 (方便使用者參考)
 ph = """本公司專門銷售高品質的有機咖啡豆, 我們只從巴西、哥倫比亞和衣索比亞的公平貿易農場進口咖啡豆.我們的烘焙師傅擁有超過20年的經驗, 確保每一批咖啡豆都能完美烘焙, 帶出其獨特的風味.顧客服務是我們的首要任務, 所有訂單在24小時內出貨, 並提供7天內無條件退貨服務.目前我們的熱銷產品有：巴西陽光咖啡豆 (中度烘焙, 帶有堅果香氣). 哥倫比亞黃金咖啡豆 (深度烘焙,口感濃郁) 和衣索比亞花園咖啡豆 (淺度烘焙，帶有花果香)。
         我們也提供咖啡器具和咖啡研磨機的銷售，並且定期舉辦咖啡品鑑會和烘焙課程.所有產品的銷售利潤的5%將捐贈給全球的咖啡農扶助基金.我們接受Visa、MasterCard和Amex信用卡支付.對於批發訂單, 我們提供特殊的折扣.公司總部位於台北市，我們的客戶服務熱線是 (02) 1234-5678。"""
