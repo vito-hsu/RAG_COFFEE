@@ -129,7 +129,9 @@ if st.session_state.show_confirm_modal:                                         
 #endregion
 
 #region --- 聊天介面邏輯 ---
-for message in st.session_state.messages:                               # 顯示所有歷史訊息，如果沒有這功能，則僅會顯示最新問答內容 !!
+
+                                                                        # 顯示所有歷史訊息，如果沒有這功能，則僅會顯示最新問答內容 !!
+for message in st.session_state.messages:                               # 且要留意的是這三行必須放在 if st.session_state.rag_system_ready: 上面<才能夠維持最正常的排版
     with st.chat_message(message["role"]):                              # 重要 !!! 對於 st.chat_message 以及其他 Streamlit 的容器類元素 (例如 st.sidebar, st.expander, st.container, st.columns)
         st.markdown(message["content"])                                 #           with 語句是必要且核心的用法。它確保了視覺元素的正確嵌套和內容的正確歸屬。
 
@@ -146,7 +148,7 @@ if st.session_state.rag_system_ready:                                   # 獲取
         with st.chat_message("assistant"):                              # 獲取 AI 回覆
             try:
                 ai_response = st.session_state.rag_chain.invoke(prompt) # 重要!!! 調用 RAG 鏈獲取回覆。
-                st.markdown(ai_response)             # 顯示最終回覆
+                st.markdown(ai_response)                                # 顯示最終回覆
             except Exception as e:
                 error_message = f"很抱歉，處理您的請求時發生錯誤：{e}。\n請確認 Ollama 服務正在運行。"
                 st.error(error_message)                                 # 將錯誤訊息作為 AI 回覆
@@ -155,6 +157,8 @@ if st.session_state.rag_system_ready:                                   # 獲取
 else:                                                                   # 如果 RAG 系統尚未就緒，顯示提示訊息並禁用聊天輸入框
     st.warning("請先輸入您的公司資訊並點擊「初始化/更新知識庫」按鈕來啟動助理。")
     st.chat_input("請先初始化知識庫...", disabled=True)
+
+
 #endregion
 
 #region --- 側邊欄使用說明 ---
