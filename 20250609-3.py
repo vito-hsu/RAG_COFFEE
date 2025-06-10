@@ -15,7 +15,7 @@ from langchain_community.chat_models import ChatOllama
 st.set_page_config(page_title="智能咖啡銷售助理", layout="centered", initial_sidebar_state="auto")
 st.title("☕ 智能咖啡銷售助理 ☕")
 st.markdown("---")
-
+temperature = st.slider("AI temperature", max_value=1.0, min_value=0.0, step=0.01, value=0.0)
 # 預設的知識庫文本範例 (方便使用者參考)
 ph = """本公司專門銷售高品質的有機咖啡豆, 我們只從巴西、哥倫比亞和衣索比亞的公平貿易農場進口咖啡豆.我們的烘焙師傅擁有超過20年的經驗, 確保每一批咖啡豆都能完美烘焙, 帶出其獨特的風味.顧客服務是我們的首要任務, 所有訂單在24小時內出貨, 並提供7天內無條件退貨服務.目前我們的熱銷產品有：巴西陽光咖啡豆 (中度烘焙, 帶有堅果香氣). 哥倫比亞黃金咖啡豆 (深度烘焙,口感濃郁) 和衣索比亞花園咖啡豆 (淺度烘焙，帶有花果香)。
         我們也提供咖啡器具和咖啡研磨機的銷售，並且定期舉辦咖啡品鑑會和烘焙課程.所有產品的銷售利潤的5%將捐贈給全球的咖啡農扶助基金.我們接受Visa、MasterCard和Amex信用卡支付.對於批發訂單, 我們提供特殊的折扣.公司總部位於台北市，我們的客戶服務熱線是 (02) 1234-5678。"""
@@ -33,7 +33,7 @@ final_context_text = ph if len(user_context_text.strip()) == 0 else user_context
 
 
 # 用於設定 RAG 系統的函數（不再緩存，因為知識庫是動態的）
-def setup_rag_system_dynamic(context_text):
+def setup_rag_system_dynamic(context_text):                                             # 重要!!! 這個函數的意義就是去建立一個 rag_chain 其可以 invoke prompt!!! 可以說是 LangChain 的核心
     """ 設定並返回 RAG 系統組件 (向量資料庫, 檢索器, LLM, RAG鏈)。該函數會根據傳入的 context_text 建立新的知識庫。"""
     knowledge_file = "company_knowledge_base.txt"                                       # 0. 將文本寫入一個臨時文件，以便 TextLoader 讀取
     with open(knowledge_file, "w", encoding="utf-8") as f:
@@ -47,28 +47,29 @@ def setup_rag_system_dynamic(context_text):
     vectorstore = Chroma.from_documents(chunks, embeddings)                             # 建立 Chroma 向量資料庫。每次調用都會創建一個新的、獨立的 in-memory 資料庫。
     retriever = vectorstore.as_retriever()
                                                                                         # 3. 定義 LLM   請確保你已經用 'ollama pull llama3.2' 下載了語言模型
-    llm = ChatOllama(model="llama3.2", temperature=0)                                   # temperature=0 確保回覆更精確和穩定
+    llm = ChatOllama(model="llama3.2", temperature=temperature)                         # temperature=0 確保回覆更精確和穩定
     rag_prompt = ChatPromptTemplate.from_messages([                                     # 4. 構建 RAG 提示模板
-        ("system", "你是一個專業的咖啡銷售助理。請根據以下檢索到的公司資訊來回答客戶的問題。如果資訊中沒有提到，請禮貌地說你無法回答，並避免編造內容。\n\n檢索到的資訊：\n{context}"),
+        ("system", """你是一個專業的咖啡銷售助理。請根據以下檢索到的公司資訊來回答客戶的問題。
+         如果資訊中沒有提到，請禮貌地說你無法回答，並避免編造內容。
+         \n\n檢索到的資訊：\n{context}"""),                                              # 注意這裡的 context and question 和 下面的關係架構 !!
         ("human", "{question}")
     ])                                                                                 
     rag_chain_input_mapper = {"context": retriever, "question": RunnablePassthrough()}  # 5. 創建 RAG 鏈
-    rag_chain = rag_chain_input_mapper | rag_prompt | llm | StrOutputParser()
+    rag_chain = rag_chain_input_mapper | rag_prompt | llm | StrOutputParser()           # 重要!!! 勿忘 rag_chain_input_mapper 和 rag_prompt 之間的關係 !!
     return rag_chain
 #endregion
 
 #region --- 初始化 session state 變數 ---
 #       重要!!  可以將 st.session_state 理解為 Streamlit 應用程式中一種特殊的「全域變數」概念
-if "messages" not in st.session_state:
+if "messages" not in st.session_state:                  # 歷史訊息
     st.session_state.messages = []
-if "rag_system_ready" not in st.session_state:
+if "rag_system_ready" not in st.session_state:          # 當系統準備好的時候，也就是代表使用者已經確認將資料做初始化，接著方能開啟問答
     st.session_state.rag_system_ready = False
-if "rag_chain" not in st.session_state:
+if "rag_chain" not in st.session_state:                 # rag鍊核心，我們是利用 rag_chain.invoke() 來取得 ai 資訊
     st.session_state.rag_chain = None
-# 新增的狀態變數，用於追蹤是否已首次載入知識庫和是否顯示確認方框
-if "initial_kb_loaded" not in st.session_state:
+if "initial_kb_loaded" not in st.session_state:         # 追蹤是否已首次載入知識庫
     st.session_state.initial_kb_loaded = False
-if "show_confirm_modal" not in st.session_state:
+if "show_confirm_modal" not in st.session_state:        # 是否顯示再確認方框
     st.session_state.show_confirm_modal = False
 #endregion
 
@@ -99,7 +100,7 @@ if st.button("初始化/更新知識庫"):                                      
 if st.session_state.show_confirm_modal:                                                 # 只有當 st.session_state.show_confirm_modal 為 True 時才顯示
     st.markdown("---")                                                                  # 分隔線
     st.info("ℹ️ 您已經初始化過知識庫。再次點擊表示您要**更新**知識庫。")
-    st.write("**是否確定要用當前文字區域的資訊來更新知識庫？這將清除當前對話歷史。**")
+    st.write("是否確定要用當前文字區域的資訊來更新知識庫？這將清除當前對話歷史，並且確認您提供的資訊**是否前後有牴觸***。")
     col_confirm, col_cancel = st.columns(2)                                             # 設置兩個按鈕，用於確認或取消操作
     with col_confirm:
         if st.button("確定更新", key="confirm_update_kb_button"):                       # 點擊「確定更新」按鈕
@@ -129,7 +130,6 @@ if st.session_state.show_confirm_modal:                                         
 #endregion
 
 #region --- 聊天介面邏輯 ---
-
                                                                         # 顯示所有歷史訊息，如果沒有這功能，則僅會顯示最新問答內容 !!
 for message in st.session_state.messages:                               # 且要留意的是這三行必須放在 if st.session_state.rag_system_ready: 上面<才能夠維持最正常的排版
     with st.chat_message(message["role"]):                              # 重要 !!! 對於 st.chat_message 以及其他 Streamlit 的容器類元素 (例如 st.sidebar, st.expander, st.container, st.columns)
