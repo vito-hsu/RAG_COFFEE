@@ -1,6 +1,6 @@
-streamlit
-langchain
-langchain-community
-langchain-core
-chromadb
-pysqlite3
+streamlit==1.36.0
+langchain==0.2.5
+langchain-community==0.2.5
+langchain-core==0.2.14
+chromadb==0.4.24
+pysqlite3-binary # 嘗試使用預編譯的二進位版本
