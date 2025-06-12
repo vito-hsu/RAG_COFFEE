@@ -1,51 +1,29 @@
 # ----------------------------------------------------------------------------
-# GitHub Actions Workflow: Streamlit App 持續交付 (CD) 管線
+# GitHub Actions: 持續交付 Streamlit Docker 應用至 GitHub Container Registry (GHCR)
 # ----------------------------------------------------------------------------
 
-# Workflow 的名稱，會在 GitHub Actions 頁面顯示
 name: Streamlit App CD Pipeline
 
-# 定義觸發這個 Workflow 的事件
 on:
   push:
-    # 當程式碼被推送到 'main' 分支時觸發
     branches: [ main ]
   workflow_dispatch:
-    # 允許您在 GitHub Actions 頁面上手動點擊按鈕來觸發這個 Workflow，方便測試
-    # [Image of Manual workflow trigger button]
 
-# 設定這個 Workflow 的權限
-# 這是一個關鍵步驟，確保 Workflow 有權限讀取儲存庫並推送到 GitHub Packages (GHCR)
 permissions:
-  contents: read   # 允許 Checkout Action 讀取儲存庫內容
-  packages: write  # 允許這個 Workflow 推送 Docker 映像檔到 GitHub Packages (GHCR)
+  contents: read
+  packages: write
 
-# 定義全局環境變數
 env:
-  # IMAGE_NAME: 定義 Docker 映像檔的名稱，用於 GitHub Container Registry
-  # ${{ github.repository }} 會自動解析為 '您的GitHub用戶名/您的儲存庫名稱'
   IMAGE_NAME: ${{ github.repository }}
 
-# 定義 Workflow 中的工作 (Jobs)
 jobs:
-  # 這個工作負責建置 Docker 映像檔並推送到 GitHub Container Registry
   build-and-push-docker:
-    # 指定這個工作在哪種虛擬機上運行：GitHub 提供的最新 Ubuntu 環境
     runs-on: ubuntu-latest
 
-    # 工作中的步驟 (Steps)
     steps:
-      # 步驟 1: 檢出程式碼
-      # uses: actions/checkout@v4 是一個官方提供的 Action，它會將您的 GitHub 儲存庫程式碼
-      # 複製到 Runner (虛擬機) 的工作目錄中，這樣後續的步驟才能存取程式碼。
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 步驟 2: 登入 GitHub Container Registry (GHCR)
-      # uses: docker/login-action@v3 用於登入 Docker 註冊表
-      # registry: ghcr.io：指定要登入 GitHub Container Registry
-      # username: ${{ github.actor }}：自動獲取觸發這個 Workflow 的 GitHub 用戶名
-      # password: ${{ secrets.GITHUB_TOKEN }}：GitHub Actions 自動提供的特殊 token，具有推送到 GHCR 的權限
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -53,12 +31,8 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # 步驟 3: 獲取 Docker 映像檔標籤 (tag)
-      # uses: docker/metadata-action@v5 會根據 Git 資訊自動生成 Docker 映像檔的標籤
-      # images: ghcr.io/${{ env.IMAGE_NAME }}：設定映像檔的基本名稱
-      # tags: 定義了兩個標籤：'latest' 和提交的短 SHA 值，方便追溯和使用
       - name: Extract Docker metadata for tagging
-        id: meta # 為這個步驟設定 ID，以便後續步驟引用其輸出 (例如生成的標籤)
+        id: meta
         uses: docker/metadata-action@v5
         with:
           images: ghcr.io/${{ env.IMAGE_NAME }}
@@ -66,12 +40,6 @@ jobs:
             type=raw,value=latest
             type=sha,format=short
 
-      # 步驟 4: 建置並推送到 Docker 映像檔
-      # uses: docker/build-push-action@v5 用於執行 Docker 建置並推送到註冊表
-      # context: .：指定 Dockerfile 所在的建置上下文路徑，'.' 表示當前儲存庫根目錄
-      # push: true：表示在建置完成後立即將映像檔推送到註冊表 (GHCR)
-      # tags: ${{ steps.meta.outputs.tags }}：使用上一步生成的標籤來標記 Docker 映像檔
-      # labels: ${{ steps.meta.outputs.labels }}：同時附加自動生成的標籤，例如 Git 提交資訊
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
@@ -80,17 +48,14 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-      # 步驟 5: Docker 映像檔推送確認訊息
-      # 顯示確認訊息，並提供如何在本地運行此 Streamlit 應用程式的命令
-      - name: Docker image pushed confirmation and local run instructions
+      - name: Show confirmation and local run guide
         run: |
-          echo "Docker image ghcr.io/${{ env.IMAGE_NAME }}:latest 和 ghcr.io/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }} 已成功推送到 GitHub Container Registry。"
-          echo "您可以到 GitHub 儲存庫的 'Packages' 頁面查看。"
+          echo "✅ Docker 映像檔已推送至 GHCR：ghcr.io/${{ env.IMAGE_NAME }}"
           echo ""
-          echo "若要執行此應用程式，請在已安裝 Ollama 並拉取模型的機器上，執行以下命令："
-          echo "1. 拉取 Docker 映像檔："
-          echo "   docker pull ghcr.io/${{ env.IMAGE_NAME }}:latest"
-          echo "2. 運行 Docker 容器並映射端口："
-          echo "   docker run -d -p 8501:8501 ghcr.io/${{ env.IMAGE_NAME }}:latest"
+          echo "📦 拉取映像檔："
+          echo "  docker pull ghcr.io/${{ env.IMAGE_NAME }}:latest"
           echo ""
-          echo "然後您就可以在瀏覽器中訪問 http://localhost:8501 來使用您的 Streamlit 應用程式。"
+          echo "▶️ 運行容器（需已安裝並執行 Ollama）"
+          echo "  docker run -d -p 8501:8501 --add-host=host.docker.internal:host-gateway ghcr.io/${{ env.IMAGE_NAME }}:latest"
+          echo ""
+          echo "🔗 開啟 http://localhost:8501"
